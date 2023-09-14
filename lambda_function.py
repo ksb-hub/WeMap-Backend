@@ -1,6 +1,7 @@
 import json
 import boto3
 import requests
+import time
 from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -19,7 +20,7 @@ def checkDB(md101_sn):
 
 def getbasicInfo():
     response = requests.get(
-        'http://apis.data.go.kr/1741000/DisasterMsg3/getDisasterMsg1List?ServiceKey=[YOUR SERVICE KEY]&type=json&pageNo=1&numOfRows=1')
+        'http://apis.data.go.kr/1741000/DisasterMsg3/getDisasterMsg1List?ServiceKey=jabqrH9wuN4m67rfaVV2Iy1EEYwKfvUDJL1TGqL4K51ifViX8uBIYpfSiTTfH6P%2F3kxwcdZEoOXCDMZrrcfWuA%3D%3D&type=json&pageNo=1&numOfRows=1')
     response.raise_for_status()
     data = response.json()
     item = data['DisasterMsg'][1]['row'][0]
@@ -48,11 +49,10 @@ def getAdditionalinfo():
 
     driver = webdriver.Chrome(chrome_options=chrome_options, executable_path='/opt/python/bin/chromedriver')
     URL = "https://www.safekorea.go.kr/idsiSFK/neo/sfk/cs/sfc/dis/disasterMsgList.jsp?menuSeq=679"
-    driver.get(URL)
-
     data_dict = {}
 
     try:
+        driver.get(URL)
         # 페이지의 첫 번째 요소가 로드될 때까지 최대 10초간 대기합니다.
         element = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.ID, "disasterSms_tr_0_apiData1"))
@@ -66,39 +66,57 @@ def getAdditionalinfo():
             "emergency_step": emergency_step,
         }
 
+    except WebDriverException as e:
+        print(f"Selenium Error: {str(e)}")
+
     finally:
         driver.quit()
 
     return data_dict
 
 
+def get_expiration_time(disaster_type):
+    current_time = int(time.time())
+    ttl_values = {
+        "태풍": 18000,  # 5 hour
+        "산사태": 18000,  # 5 hour
+        "홍수": 14400,  # 4 hour
+        "호우": 21600,  # 6 hour
+        "폭염": 21600,  # 6 hour
+        "대설": 21600,  # 6 hour
+        "지진": 18000,  # 5 hour
+        "강풍": 14400,  # 4 hour
+        "교통사고": 7200,  # 2 hour
+        "화재": 10800,  # 3 hour
+        # "화재": 60,   # 3 hour
+        "산불": 21600,  # 6 hours
+        "교통통제": 7200,  # 2 hour
+        "지진해일": 21600,  # 6 hour
+        "기타": 10800,  # 3 hour
+    }
+    return current_time + ttl_values.get(disaster_type, 10800)  # default: 3 hour
+
+
 def lambda_handler(event, context):
     try:
-        item = getbasicInfo()
+        basic_info = getbasicInfo()
+        md101_sn = basic_info.get('md101_sn')
 
-        md101_sn = item.get('md101_sn')
         if not checkDB(md101_sn):
             additional_info = getAdditionalinfo()
-            item.update(additional_info)
-            current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            item['stored_time'] = current_time
-            table.put_item(Item=item)
+            basic_info.update(additional_info)
+
+            basic_info['stored_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            # basic_info['stored_time'] = int(time.time())
+            basic_info['expiration_time'] = get_expiration_time(basic_info.get('disaster_type', ''))
+
+            table.put_item(Item=basic_info)
 
         return {
             'statusCode': 200,
             'body': json.dumps('Process Complete!')
         }
 
-    except requests.RequestException as re:
-        return {
-            'statusCode': 500,
-            'body': json.dumps(f"Failed to fetch data from API. Error: {str(re)}")
-        }
-    except ValueError as ve:
-        return {
-            'statusCode': 500,
-            'body': json.dumps(f"Data error: {str(ve)}")
-        }
     except Exception as e:
         return {
             'statusCode': 500,
