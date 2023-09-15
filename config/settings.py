@@ -60,7 +60,6 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "accounts",
     "drf_yasg",
-    "disMsg",
 ]
 
 SIMPLE_JWT = {
