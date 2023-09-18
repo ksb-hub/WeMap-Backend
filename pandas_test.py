@@ -2,6 +2,7 @@ import pandas as pd
 import boto3
 import io
 
+
 def lambda_handler(event, context):
     print(event)
     # 초기 변수 설정
@@ -10,6 +11,11 @@ def lambda_handler(event, context):
 
     # location_name = '서울특별시' # 요청에서 location_name 추출
     location_name = event['location_name']
+
+    # 강원도 -> 강원특별자치도
+    location_name = location_name.replace('강원특별자치도', '강원도')
+
+    print(location_name)
 
     if not location_name:
         return {
@@ -45,7 +51,6 @@ def lambda_handler(event, context):
         # 'statusCode': 200,
         # 'body': 'Hello! from pandas_test'
     }
-
 
     # def get_location_code_from_excel(location_name, s3_client, BUCKET_NAME, FILE_NAME):
     # s3_client = boto3.client('s3')

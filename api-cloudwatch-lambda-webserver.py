@@ -125,6 +125,7 @@ def lambda_handler(event, context):
             )
 
             res_code = json.loads(response['Payload'].read())
+            print(res_code)
             location_code = res_code['body']['location_code']
             basic_info['location_code'] = location_code
 
