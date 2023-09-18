@@ -93,6 +93,7 @@ def get_expiration_time(disaster_type):
         "교통통제": 7200,  # 2 hour
         "지진해일": 21600,  # 6 hour
         "기타": 10800,  # 3 hour
+        "실종": 21600  # 6 hours
     }
     return current_time + ttl_values.get(disaster_type, 10800)  # default: 3 hour
 
@@ -110,6 +111,8 @@ def lambda_handler(event, context):
             additional_info = getAdditionalinfo()
             basic_info.update(additional_info)
 
+            if '실종' in basic_info['msg']:
+                basic_info['disaster_type'] = '실종'
             basic_info['stored_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             # basic_info['stored_time'] = int(time.time())
             basic_info['expiration_time'] = get_expiration_time(basic_info.get('disaster_type', ''))
