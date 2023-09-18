@@ -98,6 +98,10 @@ def get_expiration_time(disaster_type):
 
 
 def lambda_handler(event, context):
+    lambda_client = boto3.client('lambda')
+
+    function_name = 'pandas_test'
+
     try:
         basic_info = getbasicInfo()
         md101_sn = basic_info.get('md101_sn')
@@ -109,6 +113,20 @@ def lambda_handler(event, context):
             basic_info['stored_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             # basic_info['stored_time'] = int(time.time())
             basic_info['expiration_time'] = get_expiration_time(basic_info.get('disaster_type', ''))
+
+            payload = {
+                'location_name': basic_info['location_name']
+            }
+
+            response = lambda_client.invoke(
+                FunctionName=function_name,
+                InvocationType='RequestResponse',  # 'RequestResponse' (동기) 또는 'Event' (비동기)
+                Payload=json.dumps(payload)
+            )
+
+            res_code = json.loads(response['Payload'].read())
+            location_code = res_code['body']['location_code']
+            basic_info['location_code'] = location_code
 
             table.put_item(Item=basic_info)
 
