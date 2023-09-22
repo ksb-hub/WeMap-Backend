@@ -51,7 +51,7 @@ def lambda_handler(event, context):
                     'body': json.dumps("Failed to get additional info.")
                 }
 
-            if '실종' in basic_info['msg']:
+            if any(keyword in basic_info['msg'] for keyword in ['실종', '배회중']):
                 basic_info['disaster_type'] = '실종'
 
             disaster_type = basic_info.get('disaster_type', '')

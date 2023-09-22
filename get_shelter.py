@@ -33,6 +33,6 @@ for file in all_files:
 # 모든 데이터프레임을 하나로 합칩니다.
 merged_df = pd.concat(dfs, ignore_index=True)
 
-merged_df.to_csv('./shelter.csv', encoding='utf-8-sig')
+merged_df.to_json('./shelter.json', encoding='utf-8-sig')
 
 # 여기까지 진행하면 merged_df가 모든 JSON 파일의 데이터를 합친 데이터프레임이 됩니다.

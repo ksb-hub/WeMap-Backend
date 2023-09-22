@@ -15,6 +15,11 @@ table = dynamodb.Table('Users')
 #         'hashed_password': hashed
 #     }
 
+def check_db(email):
+    existing_item = table.get_item(Key={'email': email})
+    return 'Item' in existing_item
+
+
 def signup(event, context):
     # password_data = hash_password(event['password'])
     # password_data = event['password']
@@ -33,6 +38,13 @@ def signup(event, context):
 
 def lambda_handler(event, context):
     print(event)
+    email = event['email']
+    if check_db(email):
+        return {
+            'statusCode': 500,
+            'body': json.dumps({"message": "User registered successfully"})
+        }
+
     return {
         'statusCode': 200,
         'body': json.dumps(signup(event, context))
