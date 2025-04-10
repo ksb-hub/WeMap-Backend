@@ -1,0 +1,7 @@
+Access-Control-Allow-Origin,
+Content-Length,
+Content-Type,
+Date,
+X-Amz-Apigw-Id,
+X-Amzn-Requestid,
+X-Amzn-Trace-Id
